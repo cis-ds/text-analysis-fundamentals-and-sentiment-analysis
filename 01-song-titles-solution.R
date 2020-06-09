@@ -14,18 +14,20 @@ pop_df <- here("data", "pop2016.csv") %>%
 # Hint: To search for matching state names, this data frame should include both
 # unigrams and bi-grams.
 
-## combine unigrams and bigrams
-tidy_lyrics <- bind_rows(
-  # unigrams
-  song_lyrics %>% 
-    unnest_tokens(output = state_name,
-                  input = Lyrics),
-  # bigrams
-  song_lyrics %>% 
-    unnest_tokens(output = state_name,
-                  input = Lyrics, 
-                  token = "ngrams", n = 2)
+## tokenize
+lyrics_unigrams <- unnest_tokens(
+  tbl = song_lyrics,
+  output = word,
+  input = Lyrics)
+lyrics_bigrams <- unnest_tokens(
+  tbl = song_lyrics,
+  output = word,
+  input = Lyrics, 
+  token = "ngrams", n = 2
 )
+
+## combine together
+tidy_lyrics <- bind_rows(lyrics_unigrams, lyrics_bigrams)
 tidy_lyrics
 
 # Find all the state names occurring in the song lyrics
@@ -36,8 +38,8 @@ tidy_lyrics
 
 ## use inner_join() to combine and only keep words that are state names
 ## distinct() to deduplicate the states per song
-tidy_lyrics <- inner_join(tidy_lyrics, pop_df) %>%
-  distinct(Rank, Song, Artist, Year, state_name, .keep_all = TRUE)
+tidy_lyrics <- inner_join(tidy_lyrics, pop_df, by = c("word" = "state_name")) %>%
+  distinct(Rank, Song, Artist, Year, word, .keep_all = TRUE)
 tidy_lyrics
 
 # Calculate the frequency for each state's mention in a song and
@@ -45,12 +47,12 @@ tidy_lyrics
 
 ## aggregate per state
 (state_counts <- tidy_lyrics %>% 
-    count(state_name) %>% 
+    count(word) %>% 
     arrange(desc(n)))
 
 ## normalize for population
 pop_df <- pop_df %>% 
-  left_join(state_counts) %>% 
+  left_join(state_counts, by = c("state_name" = "word")) %>% 
   mutate(rate = n / population * 1e6)
 
 ## which are the top ten states by rate?
