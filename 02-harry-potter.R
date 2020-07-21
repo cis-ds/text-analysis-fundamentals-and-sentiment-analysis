@@ -33,7 +33,8 @@ hp_words <- list(
   group_by(book) %>%
   mutate(chapter = row_number(book)) %>%
   # tokenize the data frame
-  unnest_tokens(word, value)
+  unnest_tokens(word, value) %>%
+  ungroup()
 hp_words
 
 # most frequent words, by book (excluding stop words)
