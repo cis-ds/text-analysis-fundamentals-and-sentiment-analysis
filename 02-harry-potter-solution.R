@@ -1,5 +1,10 @@
 library(tidyverse)
 library(tidytext)
+
+## if the harrypotter package is not present, use the function
+## below to install it.
+## DO NOT USE install.packages("harrypotter") - that is a different package
+# devtools::install_github("bradleyboehmke/harrypotter")
 library(harrypotter)
 
 # load Harry Potter text
