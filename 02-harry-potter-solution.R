@@ -37,9 +37,10 @@ hp_words <- list(
   # create a chapter id column
   group_by(book) %>%
   mutate(chapter = row_number(book)) %>%
+  ungroup() %>%
   # tokenize the data frame
-  unnest_tokens(word, value) %>%
-  ungroup()
+  unnest_tokens(word, value)
+
 hp_words
 
 # most frequent words, by book (excluding stop words)
@@ -47,11 +48,10 @@ hp_words %>%
   # delete stopwords
   anti_join(stop_words) %>%
   # summarize count per word per book
-  count(book, word, sort = TRUE) %>%
+  count(book, word) %>%
   # get top 15 words per book
   group_by(book) %>%
-  top_n(15) %>%
-  ungroup() %>%
+  slice_max(order_by = n, n = 15) %>%
   mutate(word = reorder_within(word, n, book)) %>%
   # create barplot
   ggplot(aes(x = word, y = n, fill = book)) +
@@ -80,11 +80,10 @@ hp_words %>%
 hp_bing %>%
   # generate frequency count for each word and sentiment
   group_by(sentiment) %>%
-  count(word, sort = TRUE) %>%
+  count(word) %>%
   # extract 10 most frequent pos/neg words
   group_by(sentiment) %>%
-  top_n(10) %>%
-  ungroup() %>%
+  slice_max(order_by = n, n = 10) %>%
   # prep data for sorting each word independently by facet
   mutate(word = reorder_within(word, n, sentiment)) %>%
   # generate the bar plot
@@ -100,15 +99,14 @@ hp_bing %>%
   ) +
   coord_flip()
 
-## per book
+# per book
 hp_pos_neg_book <- hp_bing %>%
   # generate frequency count for each book, word, and sentiment
   group_by(book, sentiment) %>%
-  count(word, sort = TRUE) %>%
+  count(word) %>%
   # extract 10 most frequent pos/neg words per book
   group_by(book, sentiment) %>%
-  top_n(10) %>%
-  ungroup()
+  slice_max(order_by = n, n = 10)
 
 ## positive words
 hp_pos_neg_book %>%
@@ -148,18 +146,19 @@ hp_pos_neg_book %>%
 # Visualize which words in the AFINN sentiment dictionary appear most frequently
 library(ggwordcloud)
 
+library(ggwordcloud)
+
 set.seed(123) # ensure reproducibility of the wordcloud
 hp_afinn %>%
   # count word frequency across books
-  group_by(word) %>%
-  count(sort = TRUE) %>%
-  # keep only top 150 words for wordcloud
   ungroup() %>%
-  top_n(n = 150, wt = n) %>%
+  count(word) %>%
+  # keep only top 100 words for wordcloud
+  slice_max(order_by = n, n = 100) %>%
   mutate(angle = 90 * sample(c(0, 1), n(), replace = TRUE, prob = c(70, 30))) %>%
   ggplot(aes(label = word, size = n, angle = angle)) +
-  geom_text_wordcloud_area(rm_outside = TRUE) +
-  scale_size(range = c(2, 15)) +
+  geom_text_wordcloud(rm_outside = TRUE) +
+  scale_size_area(max_size = 15) +
   ggtitle("Most frequent tokens in Harry Potter") +
   theme_minimal()
 
@@ -173,7 +172,7 @@ hp_words %>%
   inner_join(get_sentiments("afinn")) %>%
   group_by(book, chapter) %>%
   summarize(value = sum(value)) %>%
-  ggplot(aes(chapter, value, fill = book)) +
+  ggplot(mapping = aes(x = chapter, y = value, fill = book)) +
   geom_col() +
   facet_wrap(~book, scales = "free_x") +
   labs(
@@ -189,7 +188,7 @@ hp_words %>%
   inner_join(get_sentiments("afinn")) %>%
   group_by(book) %>%
   mutate(cumvalue = cumsum(value)) %>%
-  ggplot(aes(chapter, cumvalue, fill = book)) +
+  ggplot(mapping = aes(x = chapter, y = cumvalue, fill = book)) +
   geom_step() +
   facet_wrap(~book, scales = "free_x") +
   labs(
@@ -198,4 +197,3 @@ hp_words %>%
     x = "Chapter",
     y = "Cumulative emotional value"
   )
-

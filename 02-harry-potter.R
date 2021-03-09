@@ -9,12 +9,10 @@ library(harrypotter)
 
 # load Harry Potter text
 # names of each book
-hp_books <- c(
-  "philosophers_stone", "chamber_of_secrets",
-  "prisoner_of_azkaban", "goblet_of_fire",
-  "order_of_the_phoenix", "half_blood_prince",
-  "deathly_hallows"
-)
+hp_books <- c("philosophers_stone", "chamber_of_secrets",
+              "prisoner_of_azkaban", "goblet_of_fire",
+              "order_of_the_phoenix", "half_blood_prince",
+              "deathly_hallows")
 
 # combine books into a list
 hp_words <- list(
@@ -37,9 +35,10 @@ hp_words <- list(
   # create a chapter id column
   group_by(book) %>%
   mutate(chapter = row_number(book)) %>%
+  ungroup() %>%
   # tokenize the data frame
-  unnest_tokens(word, value) %>%
-  ungroup()
+  unnest_tokens(word, value)
+
 hp_words
 
 # most frequent words, by book (excluding stop words)
@@ -47,22 +46,19 @@ hp_words %>%
   # delete stopwords
   anti_join(stop_words) %>%
   # summarize count per word per book
-  count(book, word, sort = TRUE) %>%
+  count(book, word) %>%
   # get top 15 words per book
   group_by(book) %>%
-  top_n(15) %>%
-  ungroup() %>%
+  slice_max(order_by = n, n = 15) %>%
   mutate(word = reorder_within(word, n, book)) %>%
   # create barplot
-  ggplot(aes(x = word, y = n, fill = book)) +
+  ggplot(aes(x = word, y = n, fill = book)) + 
   geom_col(color = "black") +
   scale_x_reordered() +
-  labs(
-    title = "Most frequent words in Harry Potter",
-    x = NULL,
-    y = "Word count"
-  ) +
-  facet_wrap(~book, scales = "free") +
+  labs(title = "Most frequent words in Harry Potter",
+       x = NULL,
+       y = "Word count") +
+  facet_wrap(~ book, scales = "free") +
   coord_flip() +
   theme(legend.position = "none")
 
@@ -83,18 +79,17 @@ hp_afinn <- ...
 # Visualize which words in the AFINN sentiment dictionary appear most frequently
 library(ggwordcloud)
 
-set.seed(123) # ensure reproducibility of the wordcloud
+set.seed(123)   # ensure reproducibility of the wordcloud
 hp_afinn %>%
   # count word frequency across books
-  group_by(word) %>%
-  count(sort = TRUE) %>%
-  # keep only top 150 words for wordcloud
   ungroup() %>%
-  top_n(n = 150, wt = n) %>%
+  count(word) %>%
+  # keep only top 100 words for wordcloud
+  slice_max(order_by = n, n = 100) %>%
   mutate(angle = 90 * sample(c(0, 1), n(), replace = TRUE, prob = c(70, 30))) %>%
   ggplot(aes(label = word, size = n, angle = angle)) +
-  geom_text_wordcloud_area(rm_outside = TRUE) +
-  scale_size(range = c(2, 15)) +
+  geom_text_wordcloud(rm_outside = TRUE) +
+  scale_size_area(max_size = 15) +
   ggtitle("Most frequent tokens in Harry Potter") +
   theme_minimal()
 
