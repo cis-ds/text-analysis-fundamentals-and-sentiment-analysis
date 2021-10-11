@@ -58,7 +58,7 @@ hp_words %>%
   labs(title = "Most frequent words in Harry Potter",
        x = NULL,
        y = "Word count") +
-  facet_wrap(~ book, scales = "free") +
+  facet_wrap(facets = vars(book), scales = "free") +
   coord_flip() +
   theme(legend.position = "none")
 
