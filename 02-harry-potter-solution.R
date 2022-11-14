@@ -146,8 +146,6 @@ hp_pos_neg_book %>%
 # Visualize which words in the AFINN sentiment dictionary appear most frequently
 library(ggwordcloud)
 
-library(ggwordcloud)
-
 set.seed(123) # ensure reproducibility of the wordcloud
 hp_afinn %>%
   # count word frequency across books
